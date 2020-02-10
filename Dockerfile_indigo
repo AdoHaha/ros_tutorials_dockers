@@ -1,0 +1,18 @@
+FROM osrf/ros:indigo-desktop
+
+RUN apt-get update
+RUN apt-get install python3-numpy python3-pandas python3-matplotlib python3-pip --yes
+
+RUN pip3 install -U numpy scipy pandas matplotlib jupyter
+
+
+ENV NVIDIA_VISIBLE_DEVICES \
+    ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES \
+    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+    
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]
+
+
+

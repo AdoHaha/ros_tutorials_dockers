@@ -1,0 +1,3 @@
+[submodule "ipython_robot_prototyping"]
+	path = ipython_robot_prototyping
+	url = https://github.com/AdoHaha/ipython_robot_prototyping.git

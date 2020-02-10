@@ -1,0 +1,65 @@
+FROM osrf/ros:kinetic-desktop-full
+
+RUN apt-get update -q && \
+    apt-get upgrade -yq && \
+    apt-get install -yq wget curl git build-essential vim sudo lsb-release locales bash-completion
+RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial main" > /etc/apt/sources.list.d/ros-latest.list'
+RUN curl -k https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo apt-key add -
+RUN apt-get update -q && \
+    apt-get install -y ros-kinetic-desktop-full &&\
+    rm -rf /var/lib/apt/lists/*
+#RUN rosdep init
+RUN locale-gen en_US.UTF-8
+RUN useradd -m -d /home/ubuntu ubuntu -p `perl -e 'print crypt("ubuntu", "salt"),"\n"'` && \
+    echo "ubuntu ALL=(ALL) ALL" >> /etc/sudoers
+USER ubuntu
+WORKDIR /home/ubuntu
+ENV HOME=/home/ubuntu \
+    CATKIN_SHELL=bash
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
+RUN rosdep update
+
+RUN mkdir -p ~/catkin_ws/src && cd /home/ubuntu/catkin_ws/src && git clone https://github.com/ROBOTIS-GIT/turtlebot3_msgs.git && git clone https://github.com/ROBOTIS-GIT/turtlebot3.git &&  git clone https://github.com/ROBOTIS-GIT/turtlebot3_simulations.git
+COPY ipython_robot_prototyping /home/ubuntu/catkin_ws/src/ipython_robot_prototyping
+
+RUN mkdir -p ~/catkin_ws/src \
+    && /bin/bash -c '. /opt/ros/kinetic/setup.bash; catkin_init_workspace $HOME/catkin_ws/src' \
+    && /bin/bash -c '. /opt/ros/kinetic/setup.bash; cd $HOME/catkin_ws; catkin_make'
+RUN echo 'source /opt/ros/kinetic/setup.bash' >> ~/.bashrc \
+    && echo 'source ~/catkin_ws/devel/setup.bash' >> ~/.bashrc
+
+
+USER root
+
+COPY ./ros_entrypoint.sh /
+
+
+RUN apt-get update
+RUN apt-get install  mpg123 python3-numpy python3-pip python-pip libgl1-mesa-glx libgl1-mesa-glx libgl1-mesa-dri mesa-utils mesa-utils-extra libxv1 va-driver-all  pulseaudio-utils  python-catkin-tools chrony ntpdate build-essential --yes
+
+RUN  apt-get install ros-kinetic-joy ros-kinetic-teleop-twist-joy ros-kinetic-teleop-twist-keyboard ros-kinetic-laser-proc ros-kinetic-rgbd-launch ros-kinetic-depthimage-to-laserscan ros-kinetic-rosserial-arduino ros-kinetic-rosserial-python ros-kinetic-rosserial-server ros-kinetic-rosserial-client ros-kinetic-rosserial-msgs ros-kinetic-amcl ros-kinetic-map-server ros-kinetic-move-base ros-kinetic-urdf ros-kinetic-xacro ros-kinetic-compressed-image-transport ros-kinetic-rqt-image-view ros-kinetic-gmapping ros-kinetic-navigation ros-kinetic-interactive-markers --yes
+
+RUN apt-get install  ros-kinetic-rqt-* --yes && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install -U pip
+RUN pip install -U pip
+RUN pip3 install -U numpy scipy pandas matplotlib jupyter rospkg
+
+RUN cd /home/ubuntu/catkin_ws/src/ipython_robot_prototyping && pip3 install -U -r requirements.txt
+
+ENV NVIDIA_VISIBLE_DEVICES \
+    ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES \
+    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+
+RUN jupyter nbextension enable --py --sys-prefix widgetsnbextension
+
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]
+
+
+
+
+
+
